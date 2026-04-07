@@ -34,5 +34,3 @@ en: love ur mom<3
 </div>
 
 end:3
-
-end:3
