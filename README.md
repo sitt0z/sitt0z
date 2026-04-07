@@ -26,6 +26,4 @@
 </div>
 
 
-![vhs](ne.svg)
-
 end:3
