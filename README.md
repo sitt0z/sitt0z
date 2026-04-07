@@ -1,6 +1,6 @@
 <div align="center">
 
-  <h2>my mom seid i am chmpeon/<h2>
+  <h2>my mom seid i am chmpeon<h2>
   <p><strong>sanity (sitt0z)</p>
   
   <p style="font-size: 18px; color: #ff69b4;">i like draw</p>
