@@ -25,10 +25,14 @@
   <img src="https://media1.tenor.com/m/7GYUOU3_w4YAAAAC/animeadventures-aa.gif" width="400" alt="fm"/>
 </div>
 
-люблю твою маму<3
+ru: люблю твою маму<3
+
+en: love ur mom<3
 
 <div align="center">
-  <img src="https://tenor.com/view/tino-nageki-no-bourei-ha-intai-shitai-averting-eyes-gif-8903843870968381537" width="400" alt="fm"/>
+  <img src="https://media.tenor.com/e5DO03icAGEAAAAm/tino-nageki-no-bourei-ha-intai-shitai.webp" width="400" alt="fm"/>
 </div>
+
+end:3
 
 end:3
