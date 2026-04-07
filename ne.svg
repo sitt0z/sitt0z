@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="380" viewBox="0 0 820 380" fill="none">
+  <foreignObject width="100%" height="100%" xmlns="http://www.w3.org/1999/xhtml">
+    <div style="width:100%;height:100%;background:#000;position:relative;overflow:hidden;">
+      
+      <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        .vhs-root {
+          background: #000;
+          height: 380px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          position: relative;
+        }
+        .scanlines {
+          position: absolute;
+          inset: 0;
+          background: repeating-linear-gradient(to bottom, transparent 0px, transparent 3px, rgba(0,0,0,0.25) 3px, rgba(0,0,0,0.25) 4px);
+          pointer-events: none;
+          z-index: 10;
+        }
+        .noise-canvas {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 9;
+          opacity: 0.06;
+        }
+        .pixel-canvas {
+          image-rendering: pixelated;
+          image-rendering: crisp-edges;
+        }
+      </style>
+
+      <div class="vhs-root">
+        <div class="scanlines"></div>
+        <canvas class="noise-canvas" id="nc"></canvas>
+        <div style="position:relative;z-index:5;">
+          <canvas class="pixel-canvas" id="pc" width="280" height="48"></canvas>
+        </div>
+      </div>
+
+      <script>
+        // === ТВОЙ ПОЛНЫЙ СКРИПТ СЮДА (я его немного подправил под SVG) ===
+        const SCALE = 4;
+        const CW = 8, CH = 8;
+
+        const font = {};
+        font['Н'] = [0b11000110,0b11000110,0b11000110,0b11111110,0b11000110,0b11000110,0b11000110,0b00000000];
+        font['R'] = [0b11111100,0b11000110,0b11000110,0b11111100,0b11011000,0b11001100,0b11000110,0b00000000];
+        font['Y'] = [0b11000011,0b11000011,0b01100110,0b00111100,0b00011000,0b00011000,0b00011000,0b00000000];
+        font['3'] = [0b01111110,0b11000110,0b00000110,0b00111110,0b00000110,0b11000110,0b01111110,0b00000000];
+        font['e'] = [0b00000000,0b00000000,0b01111100,0b11000110,0b11111110,0b11000000,0b01111100,0b00000000];
+        font['и'] = [0b00000000,0b00000000,0b11000110,0b11001110,0b11011110,0b11110110,0b11000110,0b00000000];
+        font['щ'] = [0b00000000,0b00000000,0b11011011,0b11011011,0b11011011,0b11011011,0b11111111,0b00000011];
+        font['д'] = [0b00000000,0b00011110,0b00110110,0b01100110,0b11000110,0b11111111,0b11000011,0b11000011];
+        font['у'] = [0b00000000,0b00000000,0b11000011,0b01100110,0b00111100,0b00011000,0b00110000,0b01100000];
+        font['й'] = [0b01100110,0b00000000,0b11000110,0b11001110,0b11011110,0b11110110,0b11000110,0b00000000];
+        font[' '] = [0,0,0,0,0,0,0,0];
+
+        const fontBig = {};
+        fontBig['Н'] = [0b11000110,0b11000110,0b11000110,0b11000110,0b11111110,0b11000110,0b11000110,0b11000110];
+        fontBig['R'] = [0b11111100,0b11000110,0b11000110,0b11000110,0b11111100,0b11011000,0b11001100,0b11000110];
+        fontBig['Y'] = [0b11000011,0b11000011,0b11000011,0b01100110,0b00111100,0b00011000,0b00011000,0b00011000];
+        fontBig['3'] = [0b01111110,0b11000110,0b00000110,0b00011100,0b00111110,0b00000110,0b11000110,0b01111110];
+        fontBig[' '] = [0,0,0,0,0,0,0,0];
+
+        const tokens = [
+          {ch:'Н',big:true},{ch:'e',big:false},
+          {ch:' ',big:false},
+          {ch:'и',big:false},{ch:'щ',big:false},{ch:'Y',big:true},
+          {ch:' ',big:false},
+          {ch:'д',big:false},{ch:'R',big:true},{ch:'у',big:false},{ch:'3',big:true},{ch:'е',big:false},{ch:'й',big:false}
+        ];
+
+        const BIG_H = 10;
+        const SM_H = 7;
+        const BASELINE = BIG_H;
+        const GAP = 1;
+        const totalW = tokens.length * (CW + GAP) - GAP;
+        const totalH = BASELINE + 1;
+
+        const pc = document.getElementById('pc');
+        pc.width = totalW;
+        pc.height = totalH;
+        pc.style.width = (totalW * SCALE) + 'px';
+        pc.style.height = (totalH * SCALE) + 'px';
+        const pctx = pc.getContext('2d');
+        pctx.imageSmoothingEnabled = false;
+
+        function drawText(ctx, alpha) {
+          ctx.clearRect(0, 0, totalW, totalH);
+          tokens.forEach((tok, i) => {
+            const x = i * (CW + GAP);
+            const rows = tok.big ? (fontBig[tok.ch] || fontBig[' ']) : (font[tok.ch] || font[' ']);
+            const charH = tok.big ? BIG_H : SM_H;
+            const yOff = tok.big ? 0 : (BASELINE - SM_H + 1);
+            rows.forEach((byte, row) => {
+              if (row >= charH) return;
+              for (let col = 0; col < CW; col++) {
+                if (byte & (1 << (7 - col))) {
+                  ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+                  ctx.fillRect(x + col, yOff + row, 1, 1);
+                }
+              }
+            });
+          });
+        }
+
+        let glitchTimer = 0;
+        let glitching = false;
+        let glitchFrame = 0;
+
+        function animate() {
+          glitchTimer++;
+          let alpha = 1;
+          if (!glitching && glitchTimer > 180 + Math.random()*80|0) {
+            glitching = true;
+            glitchFrame = 0;
+            glitchTimer = 0;
+          }
+          if (glitching) {
+            glitchFrame++;
+            if (glitchFrame < 4) alpha = 0.3 + Math.random()*0.4;
+            else if (glitchFrame < 8) alpha = 1;
+            else if (glitchFrame < 12) alpha = 0.15;
+            else glitching = false;
+          }
+          drawText(pctx, alpha);
+          requestAnimationFrame(animate);
+        }
+        animate();
+
+        // Noise
+        const nc = document.getElementById('nc');
+        const nctx = nc.getContext('2d');
+        function drawNoise() {
+          const w = nc.width = 820;
+          const h = nc.height = 380;
+          const id = nctx.createImageData(w, h);
+          for (let i = 0; i < id.data.length; i += 4) {
+            id.data[i+3] = Math.random() < 0.018 ? 140 : 0;
+          }
+          nctx.putImageData(id, 0, 0);
+          setTimeout(drawNoise, 80);
+        }
+        drawNoise();
+      </script>
+    </div>
+  </foreignObject>
+</svg>
